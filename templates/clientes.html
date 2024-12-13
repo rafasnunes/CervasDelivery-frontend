@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes - Cervas Delivery{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Gerenciamento de Clientes</h2>
+    <form id="client-form">
+        <label for="cpf">CPF:</label>
+        <input type="text" id="cpf" name="cpf" required maxlength="14" pattern="\d{3}\.\d{3}\.\d{3}-\d{2}" placeholder="Ex: 123.456.789-00" autocomplete="off">
+
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" required maxlength="100" placeholder="Ex: João da Silva" autocomplete="name">
+
+        <label for="telefone">Telefone:</label>
+        <input type="text" id="telefone" name="telefone" required maxlength="15" placeholder="Ex: (11) 98765-4321" autocomplete="tel">
+
+        <label for="logradouro">Logradouro:</label>
+        <input type="text" id="logradouro" name="logradouro" required maxlength="100" placeholder="Ex: Rua das Flores" autocomplete="address-line1">
+
+        <label for="numero">Número:</label>
+        <input type="text" id="numero" name="numero" required maxlength="10" placeholder="Ex: 123" autocomplete="address-line2">
+
+        <label for="complemento">Complemento:</label>
+        <input type="text" id="complemento" name="complemento" maxlength="50" placeholder="Ex: Apto 45" autocomplete="off">
+
+        <label for="cep">CEP:</label>
+        <input type="text" id="cep" name="cep" required maxlength="9" placeholder="Ex: 12345-678" autocomplete="postal-code">
+
+        <label for="bairro">Bairro:</label>
+        <input type="text" id="bairro" name="bairro" required maxlength="50" placeholder="Ex: Centro" autocomplete="address-level2">
+
+        <label for="cidade">Cidade:</label>
+        <input type="text" id="cidade" name="cidade" required maxlength="50" placeholder="Ex: São Paulo" autocomplete="address-level2">
+
+        <label for="uf">UF:</label>
+        <select id="uf" name="uf" required>
+            <option value="">Selecione</option>
+            <option value="AC">AC</option>
+            <option value="AL">AL</option>
+            <option value="AP">AP</option>
+            <option value="AM">AM</option>
+            <option value="BA">BA</option>
+            <option value="CE">CE</option>
+            <option value="DF">DF</option>
+            <option value="ES">ES</option>
+            <option value="GO">GO</option>
+            <option value="MA">MA</option>
+            <option value="MT">MT</option>
+            <option value="MS">MS</option>
+            <option value="MG">MG</option>
+            <option value="PA">PA</option>
+            <option value="PB">PB</option>
+            <option value="PR">PR</option>
+            <option value="PE">PE</option>
+            <option value="PI">PI</option>
+            <option value="RJ">RJ</option>
+            <option value="RN">RN</option>
+            <option value="RS">RS</option>
+            <option value="RO">RO</option>
+            <option value="RR">RR</option>
+            <option value="SC">SC</option>
+            <option value="SP">SP</option>
+            <option value="SE">SE</option>
+            <option value="TO">TO</option>
+        </select>
+
+        <button type="submit">Salvar</button>
+    </form>
+
+    <h3>Lista de Clientes</h3>
+    <input type="text" id="search-client" placeholder="Pesquisar clientes por Nome" autocomplete="off">
+    <table style="font-size: 0.8em;">
+        <thead>
+            <tr>
+                <th>CPF</th>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>Endereço</th>
+                <th>Bairro</th>
+                <th>Cidade</th>
+                <th style="width: 100px;">Ações</th>
+            </tr>
+        </thead>
+        <tbody id="client-table-body">
+            <!-- Os clientes serão carregados aqui -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const clientTableBody = document.getElementById("client-table-body");
+        const clientForm = document.getElementById("client-form");
+        const searchClientInput = document.getElementById("search-client");
+
+        // Funções de formatação
+        function formatCPF(cpf) {
+            return cpf.replace(/\D/g, "")
+                .replace(/(\d{3})(\d)/, "$1.$2")
+                .replace(/(\d{3})(\d)/, "$1.$2")
+                .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+        }
+
+        function formatTelefone(telefone) {
+            telefone = telefone.replace(/\D/g, "");
+            return telefone.length === 11
+                ? telefone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
+                : telefone.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+        }
+
+        function formatCEP(cep) {
+            return cep.replace(/\D/g, "").replace(/(\d{5})(\d)/, "$1-$2");
+        }
+
+        // Listeners para limitar entradas e formatar
+        document.getElementById("cpf").addEventListener("input", (event) => {
+            event.target.value = formatCPF(event.target.value);
+        });
+
+        document.getElementById("telefone").addEventListener("input", (event) => {
+            event.target.value = formatTelefone(event.target.value);
+        });
+
+        document.getElementById("cep").addEventListener("input", (event) => {
+            event.target.value = formatCEP(event.target.value);
+        });
+
+        async function loadClients() {
+            try {
+                const response = await fetch("/clientes");
+                if (response.ok) {
+                    const clients = await response.json();
+                    clientTableBody.innerHTML = "";
+                    clients.forEach(client => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td>${formatCPF(client.cpf)}</td>
+                            <td>${client.nome}</td>
+                            <td>${formatTelefone(client.telefone)}</td>
+                            <td>${client.logradouro}, ${client.numero}, ${client.complemento || ""}</td>
+                            <td>${client.bairro}</td>
+                            <td>${client.cidade}</td>
+                            <td>
+                                <button class="edit-btn" data-id="${client.cpf}" title="Editar">✏️</button>
+                                <button class="delete-btn" data-id="${client.cpf}" title="Excluir">🗑️</button>
+                            </td>
+                        `;
+                        clientTableBody.appendChild(row);
+                    });
+                } else {
+                    alert("Erro ao carregar a lista de clientes.");
+                }
+            } catch (err) {
+                console.error("Erro ao carregar clientes:", err);
+                alert("Erro ao carregar clientes. Verifique sua conexão.");
+            }
+        }
+
+        clientForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const formData = new FormData(clientForm);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch("/clientes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+
+                if (response.ok) {
+                    alert("Cliente cadastrado com sucesso!");
+                    clientForm.reset();
+                    loadClients();
+                } else {
+                    alert("Erro ao cadastrar cliente.");
+                }
+            } catch (err) {
+                console.error("Erro ao cadastrar cliente:", err);
+                alert("Erro ao cadastrar cliente. Verifique sua conexão.");
+            }
+        });
+
+        searchClientInput.addEventListener("input", () => {
+            const filter = searchClientInput.value.toLowerCase();
+            const rows = clientTableBody.querySelectorAll("tr");
+            rows.forEach(row => {
+                const nameCell = row.querySelector("td:nth-child(2)");
+                if (nameCell) {
+                    const name = nameCell.textContent.toLowerCase();
+                    row.style.display = name.includes(filter) ? "" : "none";
+                }
+            });
+        });
+
+        clientTableBody.addEventListener("click", async (event) => {
+            let target = event.target;
+            if (target.tagName === "I") {
+                target = target.parentElement;
+            }
+
+            const id = target.dataset.id;
+
+            if (target.classList.contains("delete-btn")) {
+                if (confirm("Tem certeza que deseja excluir este cliente?")) {
+                    try {
+                        const response = await fetch(`/clientes/${id}`, { method: "DELETE" });
+                        if (response.ok) {
+                            alert("Cliente excluído com sucesso!");
+                            loadClients();
+                        } else {
+                            alert("Erro ao excluir cliente.");
+                        }
+                    } catch (err) {
+                        console.error("Erro ao excluir cliente:", err);
+                        alert("Erro ao excluir cliente. Verifique sua conexão e tente novamente.");
+                    }
+                }
+            }
+
+            if (target.classList.contains("edit-btn")) {
+                try {
+                    const response = await fetch(`/clientes/${id}`);
+                    if (response.ok) {
+                        const client = await response.json();
+                        document.getElementById("cpf").value = client.cpf;
+                        document.getElementById("nome").value = client.nome;
+                        document.getElementById("telefone").value = client.telefone;
+                        document.getElementById("logradouro").value = client.logradouro;
+                        document.getElementById("numero").value = client.numero;
+                        document.getElementById("complemento").value = client.complemento || "";
+                        document.getElementById("cep").value = client.cep;
+                        document.getElementById("bairro").value = client.bairro;
+                        document.getElementById("cidade").value = client.cidade;
+                        document.getElementById("uf").value = client.uf;
+
+                        alert("Edite os dados no formulário e clique em 'Salvar' para atualizar.");
+                    } else {
+                        alert("Erro ao buscar dados do cliente para edição.");
+                    }
+                } catch (err) {
+                    console.error("Erro ao buscar cliente para edição:", err);
+                }
+            }
+        });
+
+        loadClients();
+    });
+</script>
+{% endblock %}

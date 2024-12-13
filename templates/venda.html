@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Vendas - Cervas Delivery{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Venda - PDV</h2>
+
+    <!-- Seleção de Cliente -->
+    <div id="client-selection">
+        <h3>Selecionar Cliente</h3>
+        <input type="text" id="search-client" placeholder="Pesquisar por nome ou CPF" maxlength="100" style="width: 100%; padding: 0.375rem 0.75rem; font-size: 1rem; border: 1px solid #ced4da; border-radius: 0.25rem;">
+        <table>
+            <thead>
+                <tr>
+                    <th>CPF</th>
+                    <th>Nome</th>
+                    <th>Telefone</th>
+                    <th>Endereço</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="client-table-body">
+                <!-- Clientes carregados aqui -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Nome do Cliente Selecionado -->
+    <div id="selected-client" style="display: none; margin-top: 20px; text-align: center;">
+        <h3>Cliente Selecionado:</h3>
+        <h2 style="font-weight: bold; margin: 0;" id="client-name"></h2>
+    </div>
+
+    <!-- Seleção de Produtos -->
+    <div id="product-selection" style="display: none;">
+        <h3>Adicionar Produtos</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nome</th>
+                    <th>Marca</th>
+                    <th>Preço</th>
+                    <th>Quantidade</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="product-table-body">
+                <!-- Produtos carregados aqui -->
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- Lista de Itens da Venda -->
+    <div id="sale-summary" style="display: none;">
+        <h3>Resumo da Venda</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Preço Unitário</th>
+                    <th>Quantidade</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="sale-items-body">
+                <!-- Itens adicionados aqui -->
+            </tbody>
+        </table>
+        <h4>Total: R$ <span id="sale-total">0.00</span></h4>
+        <button id="finalize-sale">Finalizar Venda</button>
+    </div>
+
+    <!-- Consulta de Vendas -->
+    <div id="sale-search" style="margin-top: 40px;">
+        <h3>Consultar Vendas</h3>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="text" id="search-sale" placeholder="Pesquisar por número da venda, nome ou CPF do cliente" maxlength="100" style="flex: 1; padding: 0.375rem 0.75rem; font-size: 1rem; border: 1px solid #ced4da; border-radius: 0.25rem;">
+            <button id="search-sale-btn" style="padding: 0.375rem 0.75rem; font-size: 1rem; border: 1px solid #ced4da; border-radius: 0.25rem;">Buscar</button>
+        </div>
+        <div id="sale-results" style="margin-top: 20px;">
+            <h4>Resultados:</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Data/Hora</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="sale-results-body">
+                    <!-- Resultados de vendas carregados aqui -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Detalhes da Venda -->
+    <div id="sale-details" style="display: none; margin-top: 20px;">
+        <h3 id="sale-id"></h3>
+        <h3 id="sale-client-name"></h3>
+        <div style="margin: 20px 0;"></div>
+        <h4>Lista de Cervejas:</h4>
+        <div id="sale-items-list" class="beer-list">
+            <!-- Cada item será exibido como um cartão -->
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/venda.js"></script>
+{% endblock %}

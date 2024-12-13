@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Cervejas - Cervas Delivery{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Gerenciamento de Cervejas</h2>
+    <form id="beer-form">
+        <label for="cod_barra">Código de Barras:</label>
+        <input type="text" id="cod_barra" name="cod_barra" required maxlength="13" placeholder="Ex: 1234567890123">
+
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" required maxlength="100" placeholder="Ex: Cerveja Nova Pilsen Lata 350ml">
+
+        <label for="marca">Marca:</label>
+        <input type="text" id="marca" name="marca" required placeholder="Ex: Nova Marca de Cerveja">
+
+        <label for="tipo">Tipo:</label>
+        <input type="text" id="tipo" name="tipo" required placeholder="Ex: Lager, Pilsen, Ipa, etc...">
+
+        <label for="pais">País de Origem:</label>
+        <input type="text" id="pais" name="pais" required placeholder="Ex: Brasil">
+
+        <label for="preco">Preço:</label>
+        <input type="text" id="preco" name="preco" required placeholder="Ex: 12,99">
+
+        <button type="submit">Salvar</button>
+    </form>
+
+    <h3>Lista de Cervejas</h3>
+    <input type="text" id="search-beer" placeholder="Pesquisar cervejas" style="width: 100%; padding: 0.375rem 0.75rem; font-size: 1rem; border: 1px solid #ced4da; border-radius: 0.25rem;">
+    <table style="font-size: 0.8em;">
+        <thead>
+            <tr>
+                <th>Código de Barras</th>
+                <th>Nome</th>
+                <th>Marca</th>
+                <th>Tipo</th>
+                <th>País</th>
+                <th>Preço</th>
+                <th style="width: 100px;">Ações</th>
+            </tr>
+        </thead>
+        <tbody id="beer-table-body">
+            <!-- As cervejas serão carregadas aqui -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const beerForm = document.getElementById("beer-form");
+        const beerTableBody = document.getElementById("beer-table-body");
+        const searchInput = document.getElementById("search-beer");
+        const codBarraField = document.getElementById("cod_barra");
+        const precoField = document.getElementById("preco");
+
+        // Restringir entrada de apenas números no campo de código de barras
+        codBarraField.addEventListener("input", (event) => {
+            event.target.value = event.target.value.replace(/\D/g, "");
+        });
+
+        // Substituir vírgula por ponto no campo de preço
+        precoField.addEventListener("input", (event) => {
+            event.target.value = event.target.value.replace(/,/g, ".");
+        });
+
+        beerForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(beerForm);
+            const beerData = Object.fromEntries(formData.entries());
+
+            console.log("Dados a serem enviados:", beerData); // Log para depuração
+
+            try {
+                const response = await fetch("/cervejas", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(beerData),
+                });
+
+                if (response.ok) {
+                    alert("Cerveja salva com sucesso!");
+                    beerForm.reset();
+                    loadBeers();
+                } else {
+                    const error = await response.json();
+                    console.error("Erro ao salvar cerveja:", error);
+                    alert(`Erro ao salvar a cerveja: ${error.error || "Erro desconhecido"}`);
+                }
+            } catch (err) {
+                console.error("Erro ao conectar ao servidor:", err);
+                alert("Erro ao conectar ao servidor. Verifique sua conexão e tente novamente.");
+            }
+        });
+
+        async function loadBeers() {
+            try {
+                const response = await fetch("/cervejas");
+                if (response.ok) {
+                    const beers = await response.json();
+
+                    beerTableBody.innerHTML = ""; // Limpa a tabela antes de preenchê-la
+                    beers.forEach((beer) => {
+                        const row = document.createElement("tr");
+
+                        row.innerHTML = `
+                            <td>${beer.cod_barra}</td>
+                            <td>${beer.nome}</td>
+                            <td>${beer.marca}</td>
+                            <td>${beer.tipo}</td>
+                            <td>${beer.pais}</td>
+                            <td>${beer.preco.toFixed(2)}</td>
+                            <td>
+                                <button class="edit-btn" data-cod-barra="${beer.cod_barra}" title="Editar" style="width: 30px; height: 30px;">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+                                <button class="delete-btn" data-cod-barra="${beer.cod_barra}" title="Excluir" style="width: 30px; height: 30px;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+
+                        beerTableBody.appendChild(row);
+                    });
+                } else {
+                    console.error("Erro ao carregar cervejas:", response.statusText);
+                }
+            } catch (err) {
+                console.error("Erro ao conectar ao servidor ao carregar cervejas:", err);
+            }
+        }
+
+        searchInput.addEventListener("input", () => {
+            const filter = searchInput.value.toLowerCase();
+            const rows = beerTableBody.querySelectorAll("tr");
+
+            rows.forEach((row) => {
+                const nameCell = row.querySelector("td:nth-child(2)");
+                const name = nameCell.textContent.toLowerCase();
+                row.style.display = name.includes(filter) ? "" : "none";
+            });
+        });
+
+        beerTableBody.addEventListener("click", async (event) => {
+            let target = event.target;
+
+            if (target.tagName === "I") {
+                target = target.parentElement;
+            }
+
+            const codBarra = target.dataset.codBarra;
+
+            if (target.classList.contains("delete-btn")) {
+                if (confirm("Tem certeza que deseja excluir esta cerveja?")) {
+                    try {
+                        const response = await fetch(`/cervejas/${codBarra}`, { method: "DELETE" });
+                        if (response.ok) {
+                            alert("Cerveja excluída com sucesso!");
+                            loadBeers();
+                        } else {
+                            alert("Erro ao excluir cerveja.");
+                        }
+                    } catch (err) {
+                        console.error("Erro ao excluir cerveja:", err);
+                        alert("Erro ao excluir cerveja. Verifique sua conexão e tente novamente.");
+                    }
+                }
+            }
+
+            if (target.classList.contains("edit-btn")) {
+                try {
+                    const response = await fetch(`/cervejas/${codBarra}`);
+                    if (response.ok) {
+                        const beer = await response.json();
+
+                        document.getElementById("cod_barra").value = beer.cod_barra;
+                        document.getElementById("nome").value = beer.nome;
+                        document.getElementById("marca").value = beer.marca;
+                        document.getElementById("tipo").value = beer.tipo;
+                        document.getElementById("pais").value = beer.pais;
+                        document.getElementById("preco").value = beer.preco.toFixed(2);
+
+                        alert("Edite os dados no formulário e clique em 'Salvar' para atualizar.");
+                    } else {
+                        alert("Erro ao buscar dados da cerveja para edição.");
+                    }
+                } catch (err) {
+                    console.error("Erro ao buscar cerveja para edição:", err);
+                }
+            }
+        });
+
+        loadBeers();
+    });
+</script>
+{% endblock %}
